@@ -13,13 +13,17 @@ int main(int argc, char **argv){
   IloBool constraint_type = WAITING_TIME;
   IloNum congestion_parameter = 0;
   IloNum alpha = 85;
-  const char* filename = "../Instancias/Q_MCLP_30.txt";
-  if(argc > 1){
+  const char* filename;
+  if(argc > 5){
     filename = argv[1];
     p = atoi(argv[2]);
     constraint_type = atoi(argv[3]);
     congestion_parameter = atoi(argv[4]);
     alpha = atoi(argv[5]);
+  }
+  else {
+    usage();
+    return 0;
   }
 
   // Comienza lectura de archivo
@@ -239,6 +243,12 @@ void QM_CLAM
     // Resuelver modelo
     IloCplex cplex(PMCLAP);
     cplex.exportModel("QM-CLAM.lp");
+    
+    // Ajusta prioridades de variables
+    for (j = 0;j < n;j++) {
+      cplex.setPriority(y[j],1);
+    }
+
     if(cplex.solve()){
       cout << "Solution status: " << cplex.getStatus() << endl;
       cout << "Maximum profit = " << cplex.getObjValue() << endl;
@@ -278,5 +288,26 @@ IloNum RHS_Queue_Size(IloNum mu,IloNum b,IloNum alpha){
 }
 
 IloNum RHS_Waiting_time(IloNum mu ,IloNum Tao,IloNum alpha){
-  return mu*0.061 + log(1-alpha*0.01)/Tao;
+  return mu + 60*24*log(1-alpha*0.01)/Tao;
+}
+
+void usage() {
+  cout << "Usage:" << endl;
+  cout << "\t./PMCLAP <filename> <p> <constraint_type>  <congestion_parameter> <alpha>" << endl;
+  cout << "where:" << endl;
+  cout << "\t<filename> is a file with the format:" << endl
+       << "\t\tn S" << endl
+       << "\t\tx1 y1 d1" << endl 
+       << "\t\t..." << endl
+       << "\t\txn yn dn" << endl;
+  cout << "\t<p> is the number of centers to open" << endl;
+  cout << "\t<constraint_type> is" << endl
+       << "\t\t0: for queue size constraint" << endl
+       << "\t\t1: for waiting time constraint" << endl;
+  cout << "\t<congestion_parameter> is" << endl
+       << "\t\tb the maximium queue lenght if queue size constraint was selected" << endl
+       << "\t\tTao the maximum waiting time if waiting time constraint was selected" << endl;
+  cout << "\t<alpha> is the minimum probability of at most" << endl
+       << "\t\ta queue with b clients or" << endl
+       << "\t\ta waiting time of Tao minutes" << endl;
 }
