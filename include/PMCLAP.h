@@ -35,6 +35,7 @@ void QM_CLAM
 
 IloNum RHS_Queue_Size(IloNum,IloNum,IloNum);
 IloNum RHS_Waiting_time(IloNum,IloNum,IloNum);
+void usage();
 
 #endif
 
