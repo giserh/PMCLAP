@@ -102,7 +102,7 @@ void QM_CLAM
 {
   IloEnv env;
   try {
-    IloInt i,j;
+    int i,j;
     IloInt n = I->n;
     point *puntos = I->points;
     // Comienza definicion del Modelo PMCLAP (o QM-CLAM)
@@ -267,6 +267,7 @@ void QM_CLAM
 	}
 	cout << endl;
       }/**/
+      gnuplot(I,&cplex,&y,&x,p,constraint_type,congestion_parameter,alpha);
     }
     else {
       cout << "No solution found" << endl;
@@ -310,4 +311,53 @@ void usage() {
   cout << "\t<alpha> is the minimum probability of at most" << endl
        << "\t\ta queue with b clients or" << endl
        << "\t\ta waiting time of Tao minutes" << endl;
+}
+
+void gnuplot(instance* I,IloCplex *cplex,IloBoolVarArray *y,BoolVarMatrix *x,IloInt p,IloBool constraint_type,IloNum congestion_parameter,IloNum alpha){
+  IloInt i,j;
+  IloInt n = I->n;
+  point *puntos = I->points;
+
+  char outfilename[32],centersfilename[32];
+  FILE *gnuPipe = popen("gnuplot","w");
+
+  sprintf(outfilename,"../../gnuplot/Ejes_%d.dat",n);
+  ofstream outfile(outfilename);
+  sprintf(centersfilename,"../../gnuplot/Centros_%d.dat",n);
+  ofstream centros(centersfilename);
+  
+  for(i = 0;i < n;i++){
+    if (cplex->getValue((*y)[i]))
+      centros << puntos[i].x << " " << puntos[i].y << endl;
+  }
+  centros.close();
+
+  for(i = 0;i < n;i++){
+    for(j = 0;j < n;j++){
+      if (i != j && puntos[i].N_i[j] && cplex->getValue((*x)[i][j]))
+	outfile << puntos[i].x << " " << puntos[i].y << " " 
+		<< puntos[j].x - puntos[i].x << " " << puntos[j].y - puntos[i].y << endl;
+    }
+  }
+  outfile.close();
+
+  fprintf(gnuPipe,"set term svg\n");
+  fprintf(gnuPipe,"set output '../../gnuplot/PMCLAM_%d_%d_%d_%.0f_%.0f.svg'\n",n,p,constraint_type,congestion_parameter,alpha);
+  fprintf(gnuPipe,"unset key\n");
+  fprintf(gnuPipe,"unset border\n");
+  fprintf(gnuPipe,"unset yzeroaxis\n");
+  fprintf(gnuPipe,"unset xtics\n");
+  fprintf(gnuPipe,"unset ytics\n");
+  fprintf(gnuPipe,"unset ztics\n");
+  fprintf(gnuPipe,"set title \"Servicio de %.0f\n",cplex->getObjValue());
+  //fprintf(gnuPipe,"set style arrow 1 nohead lw 2\n");
+  //fprintf(gnuPipe,"set arrow arrowstyle 1\n");
+  fprintf(gnuPipe,"plot ");
+  fprintf(gnuPipe,"'../PMCLAP/Instancias/Q_MCLP_%d.txt' every ::1 using 1:2 with points lc rgb \"black\"",n);
+  fprintf(gnuPipe,", '../../gnuplot/Ejes_%d.dat' using 1:2:3:4 with vectors nohead linecolor rgb \"dark-blue\"",n);
+  fprintf(gnuPipe,", '../../gnuplot/Centros_%d.dat' using 1:2 with points lc rgb \"red\"",n);
+
+  fprintf(gnuPipe,"\n");
+  pclose(gnuPipe);
+  
 }
