@@ -36,6 +36,7 @@ void QM_CLAM
 IloNum RHS_Queue_Size(IloNum,IloNum,IloNum);
 IloNum RHS_Waiting_time(IloNum,IloNum,IloNum);
 void usage();
+void gnuplot(instance*,IloCplex*,IloBoolVarArray*,BoolVarMatrix*,IloInt,IloBool,IloNum,IloNum);
 
 #endif
 
